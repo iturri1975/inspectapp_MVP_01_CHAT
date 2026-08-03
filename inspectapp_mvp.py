@@ -19,7 +19,7 @@ def get_image_base64(path):
             return base64.b64encode(f.read()).decode()
     return ""
 
-ivo_b64 = get_image_base64("./assets/IVO.png")
+ivo_b64 = get_image_base64("./IVO.png")
 ivo_bg_css = f"url('data:image/png;base64,{ivo_b64}')" if ivo_b64 else "none"
 
 # ESTILOS CSS PERSONALIZADOS - ALTO CONTRASTE PARA LUZ SOLAR
@@ -33,6 +33,12 @@ st.markdown(f"""
         display: none !important;
     }}
 
+    /* Inmunidad total a Dark Mode: evita que el navegador/SO fuerce paleta oscura */
+    html, body {{
+        background-color: #F4F6F8 !important;
+        color-scheme: light !important;
+    }}
+
     /* Fondo principal claro y limpio, inmunidad a Dark Mode */
     .stApp, [data-testid="stApp"] {{
         background-color: #F4F6F8 !important;
@@ -40,6 +46,19 @@ st.markdown(f"""
 
     /* Forzar que todo el texto sea oscuro para contraste bajo el sol */
     p, span, div, h1, h2, h3, h4, h5, h6, label {{
+        color: #0F172A !important;
+    }}
+
+    /* Componentes BaseWeb (popovers, menús de selectbox, tooltips) se
+       renderizan en un portal fuera de .stApp y no heredaban el fondo claro,
+       dejando texto oscuro sobre fondo oscuro del sistema. Se fuerza acá. */
+    [data-baseweb="popover"], [data-baseweb="layer"], [data-baseweb="menu"],
+    ul[role="listbox"], div[role="tooltip"] {{
+        background-color: #FFFFFF !important;
+        color-scheme: light !important;
+    }}
+    [data-baseweb="popover"] *, [data-baseweb="layer"] *, [data-baseweb="menu"] *,
+    ul[role="listbox"] * {{
         color: #0F172A !important;
     }}
 
@@ -176,10 +195,6 @@ if "foto_cpt" not in st.session_state:
     st.session_state.foto_cpt = None
 if "foto_cateo" not in st.session_state:
     st.session_state.foto_cateo = None
-if "show_cam_cpt" not in st.session_state:
-    st.session_state.show_cam_cpt = False
-if "show_cam_cateo" not in st.session_state:
-    st.session_state.show_cam_cateo = False
 
 # Configuración del modelo Gemini utilizando st.secrets o variables de entorno
 api_key = None
@@ -240,6 +255,7 @@ system_instruction = (
     "- Usa viñetas estructuradas y resalta SIEMPRE todas las cifras, distancias y valores en **negrita** para rápida auditoría en terreno."
 )
 
+gemini_config_error = None
 if api_key:
     try:
         genai.configure(api_key=api_key)
@@ -249,6 +265,7 @@ if api_key:
             model = genai.GenerativeModel('gemini-2.0-flash', system_instruction=system_instruction)
         model_initialized = True
     except Exception as e:
+        gemini_config_error = str(e)
         st.error(f"Error al configurar Gemini: {e}")
 
 # INTERFAZ PRINCIPAL - CABECERA
@@ -283,7 +300,29 @@ with tab1:
             num_permiso = st.text_input("N° Permiso (Sertronic)", "PT-2026-8942")
         with col_doc2:
             num_cpt = st.text_input("N° CPT Asociado (Blister)", "CPT-4402")
-    
+
+        st.write("**Consulta Automatizada de Habilitaciones (Sertronic + Blister):**")
+        st.caption("Simulación de la consulta en background a Sertronic (seguros, operarios, maquinaria) y Blister (checklists) prevista en el MVP.")
+        resultado_habilitacion = st.radio(
+            "Resultado simulado de la consulta",
+            [
+                "✅ Vigente: seguros, operarios y maquinaria habilitados",
+                "🛑 Desvío detectado: documentación vencida o faltante",
+            ],
+            label_visibility="collapsed",
+            key="resultado_habilitacion",
+        )
+        bloqueo_habilitacion = resultado_habilitacion.startswith("🛑")
+        if bloqueo_habilitacion:
+            st.error(
+                "🛑 BLOQUEO DE SEGURIDAD (HARD GATE)\n\n"
+                "Desvío documental detectado en Sertronic/Blister: no se puede abrir el permiso "
+                "hasta regularizar la habilitación de la contratista, operarios o maquinaria.",
+                icon=":material/block:",
+            )
+        else:
+            st.success("Habilitaciones vigentes. Contratista, operarios y maquinaria en regla.", icon=":material/check_circle:")
+
     with st.container(border=True):
         st.subheader(":material/gas_meter: 1.2 Control Crítico de Gases")
         col_g1, col_g2, col_g3, col_g4 = st.columns(4)
@@ -321,40 +360,35 @@ with tab1:
         st.subheader(":material/draw: 1.3 Firmas CPT")
         cpt_checked = st.checkbox("Certifico bajo declaración jurada haber brindado la charla CPT y verificar firmas en físico.")
         
-        # Evidencia fotográfica de la planilla física
+        # Evidencia fotográfica de la planilla física (cámara nativa o galería)
         st.write("**Evidencia Requerida:**")
-        if not st.session_state.show_cam_cpt and st.session_state.foto_cpt is None:
-            if st.button("📷 Habilitar Cámara para Evidencia", key="btn_open_cpt"):
-                st.session_state.show_cam_cpt = True
-                st.rerun()
-        
-        if st.session_state.show_cam_cpt:
-            evidencia_cpt = st.camera_input("📸 Tomar foto de la Planilla CPT firmada", key="cam_cpt")
-            if evidencia_cpt:
+        if st.session_state.foto_cpt is None:
+            evidencia_cpt = st.file_uploader(
+                "📷 Adjuntar foto de la Planilla CPT firmada (abre cámara o galería en el celular)",
+                type=["jpg", "jpeg", "png"],
+                key="upload_cpt"
+            )
+            if evidencia_cpt is not None:
                 st.session_state.foto_cpt = evidencia_cpt
-                st.session_state.show_cam_cpt = False
                 st.rerun()
-            if st.button("❌ Cerrar Cámara", key="btn_close_cpt"):
-                st.session_state.show_cam_cpt = False
-                st.rerun()
-
-        if st.session_state.foto_cpt is not None:
+        else:
             st.image(st.session_state.foto_cpt, width=150, caption="Captura CPT")
-            if st.button("❌ Eliminar / Volver a tomar", key="btn_retake_cpt"):
+            if st.button("❌ Eliminar / Volver a adjuntar", key="btn_retake_cpt"):
                 st.session_state.foto_cpt = None
-                st.session_state.show_cam_cpt = True
                 st.rerun()
 
         col_sig1, col_sig2 = st.columns(2)
         with col_sig1:
-            firma_ins = st.checkbox(f"Firma: {inspector} (Oldelval)", disabled=bloqueo_gases or not cpt_checked or st.session_state.foto_cpt is None)
+            firma_ins = st.checkbox(f"Firma: {inspector} (Oldelval)", disabled=bloqueo_gases or bloqueo_habilitacion or not cpt_checked or st.session_state.foto_cpt is None)
         with col_sig2:
-            firma_sol = st.checkbox(f"Firma: {solicitante_contratista} (Contratista)", disabled=bloqueo_gases or not cpt_checked or st.session_state.foto_cpt is None)
-            
-        m1_listo = firma_ins and firma_sol and not bloqueo_gases and st.session_state.foto_cpt is not None
+            firma_sol = st.checkbox(f"Firma: {solicitante_contratista} (Contratista)", disabled=bloqueo_gases or bloqueo_habilitacion or not cpt_checked or st.session_state.foto_cpt is None)
+
+        m1_listo = firma_ins and firma_sol and not bloqueo_gases and not bloqueo_habilitacion and st.session_state.foto_cpt is not None
         if m1_listo:
             st.success("Momento 1 completado. Proceder al Momento 2.", icon=":material/done_all:")
         else:
+            if bloqueo_habilitacion:
+                st.warning("No se puede abrir el permiso: desvío documental en Sertronic/Blister.", icon=":material/gpp_bad:")
             if st.session_state.foto_cpt is None:
                 st.warning("Falta captura fotográfica del documento firmado.", icon=":material/photo_camera:")
             st.warning("Complete las validaciones para avanzar.", icon=":material/warning:")
@@ -442,28 +476,21 @@ with tab2:
                         st.success("🔓 Bypass autorizado.")
                 else:
                     st.write("**Evidencia Requerida:**")
-                    if not st.session_state.show_cam_cateo and st.session_state.foto_cateo is None:
-                        if st.button("📷 Habilitar Cámara para Evidencia", key="btn_open_cateo"):
-                            st.session_state.show_cam_cateo = True
-                            st.rerun()
-
-                    if st.session_state.show_cam_cateo:
-                        evidencia_cateo = st.camera_input("📸 Tomar foto del cateo manual a 360° en terreno", key="cam_cateo")
-                        if evidencia_cateo:
+                    if st.session_state.foto_cateo is None:
+                        evidencia_cateo = st.file_uploader(
+                            "📷 Adjuntar foto del cateo manual a 360° en terreno (abre cámara o galería en el celular)",
+                            type=["jpg", "jpeg", "png"],
+                            key="upload_cateo"
+                        )
+                        if evidencia_cateo is not None:
                             st.session_state.foto_cateo = evidencia_cateo
-                            st.session_state.show_cam_cateo = False
                             st.rerun()
-                        if st.button("❌ Cerrar Cámara", key="btn_close_cateo"):
-                            st.session_state.show_cam_cateo = False
+                    else:
+                        st.image(st.session_state.foto_cateo, width=150, caption="Captura Cateo 360°")
+                        if st.button("❌ Eliminar / Volver a adjuntar", key="btn_retake_cateo"):
+                            st.session_state.foto_cateo = None
                             st.rerun()
 
-                    if st.session_state.foto_cateo is not None:
-                        st.image(st.session_state.foto_cateo, width=150, caption="Captura Cateo 360°")
-                        if st.button("❌ Eliminar / Volver a tomar", key="btn_retake_cateo"):
-                            st.session_state.foto_cateo = None
-                            st.session_state.show_cam_cateo = True
-                            st.rerun()
-                        
                     if st.session_state.foto_cateo is None:
                         bloqueo_maq = True
                         st.warning("📸 Faltan evidencias. Es obligatorio adjuntar la foto del cateo.")
@@ -486,13 +513,15 @@ with tab2:
 with st.popover(" ", width="stretch"):
     col_av1, col_av2 = st.columns([1, 3], vertical_alignment="center")
     with col_av1:
-        if os.path.exists("./assets/IVO.png"):
-            st.image("./assets/IVO.png", width=65)
+        if os.path.exists("./IVO.png"):
+            st.image("./IVO.png", width=65)
         else:
             st.markdown("🤖")
     with col_av2:
         st.markdown("**Ivo ─ Copiloto**")
         st.caption("Asistente técnico Oldelval")
+        if not model_initialized:
+            st.caption("⚠️ Sin GEMINI_API_KEY configurada — modo simulación")
 
     if st.session_state.messages:
         if st.button("🗑️ Limpiar", key="clear_chat_btn"):
@@ -516,12 +545,12 @@ with st.popover(" ", width="stretch"):
             st.markdown("👋 **¡Hola! Soy Ivo.** Tu copiloto digital de bolsillo.\n\nPreguntame sobre normativas, LERs o procedimientos.")
         else:
             for message in st.session_state.messages:
-                av = "./assets/IVO.png" if (message["role"] == "assistant" and os.path.exists("./assets/IVO.png")) else ("🤖" if message["role"] == "assistant" else "👷‍♂️")
+                av = "./IVO.png" if (message["role"] == "assistant" and os.path.exists("./IVO.png")) else ("🤖" if message["role"] == "assistant" else "👷‍♂️")
                 with st.chat_message(message["role"], avatar=av):
                     st.markdown(message["content"])
 
             if st.session_state.messages[-1]["role"] == "user":
-                av_assistant = "./assets/IVO.png" if os.path.exists("./assets/IVO.png") else "🤖"
+                av_assistant = "./IVO.png" if os.path.exists("./IVO.png") else "🤖"
                 with st.chat_message("assistant", avatar=av_assistant):
                     with st.spinner("Ivo está pensando..."):
                         if model_initialized:
@@ -535,7 +564,12 @@ with st.popover(" ", width="stretch"):
                             except Exception as e:
                                 response_text = f"No pude conectarme con Gemini API. Detalle técnico: {str(e)}"
                         else:
-                            response_text = "⚠️ **Modo Simulación:** Sin clave de API. Ejemplo: La tapada es T = D_medida - R_cañería."
+                            response_text = (
+                                "⚠️ **Modo Simulación:** No se encontró una `GEMINI_API_KEY` válida "
+                                "(configúrala en `.streamlit/secrets.toml` o como variable de entorno). "
+                                f"{'Detalle: ' + gemini_config_error if gemini_config_error else ''}\n\n"
+                                "Ejemplo de respuesta real: La tapada es T = D_medida - R_cañería."
+                            )
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
                 st.rerun()
