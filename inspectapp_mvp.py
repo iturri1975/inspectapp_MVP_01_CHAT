@@ -15,7 +15,7 @@ st.set_page_config(
 # PALETA CORPORATIVA (azul marino + gris) ------------------------------
 COLOR_PRIMARY = "#1E3A5F"        # azul marino, color de acento principal
 COLOR_PRIMARY_DARK = "#152A45"   # azul marino oscuro (hover/énfasis)
-COLOR_BG = "#F4F6F8"             # fondo general, gris muy claro
+COLOR_BG = "#EAF1F8"             # fondo general, azul pálido suave (más descansado que gris plano)
 COLOR_CARD = "#FFFFFF"           # fondo de tarjetas
 COLOR_BORDER = "#D6DBE1"         # bordes neutros
 COLOR_TEXT = "#0F172A"           # texto principal
@@ -310,7 +310,7 @@ with st.container(border=True):
     with col_cfg1:
         obra_seleccionada = st.selectbox("Estación / Tramo", ["Medanito", "Allen", "Crucero Catriel", "Puerto Rosales"])
     with col_cfg2:
-        inspector = st.text_input("Inspector Oldelval", "Sofía Cervantes")
+        inspector = st.text_input("Inspector Oldelval", "Sofía Cervantes (Ingeniería)")
     with col_cfg3:
         solicitante_contratista = st.text_input("Solicitante Contratista", "Ing. Pedro Gómez")
 
