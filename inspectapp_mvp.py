@@ -33,13 +33,31 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* Fondo principal claro y limpio */
-    .stApp {{
+    /* Fondo principal claro y limpio, inmunidad a Dark Mode */
+    .stApp, [data-testid="stApp"] {{
         background-color: #F4F6F8 !important;
     }}
 
     /* Forzar que todo el texto sea oscuro para contraste bajo el sol */
     p, span, div, h1, h2, h3, h4, h5, h6, label {{
+        color: #0F172A !important;
+    }}
+
+    /* Chat específico: fondo claro para legibilidad absoluta */
+    [data-testid="stChatMessage"] {{
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+        border: 1px solid #CBD5E1 !important;
+        margin-bottom: 10px !important;
+    }}
+    [data-testid="stChatInput"] {{
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border: 1px solid #94A3B8 !important;
+    }}
+    [data-testid="stChatInput"] textarea {{
         color: #0F172A !important;
     }}
 
@@ -158,6 +176,10 @@ if "foto_cpt" not in st.session_state:
     st.session_state.foto_cpt = None
 if "foto_cateo" not in st.session_state:
     st.session_state.foto_cateo = None
+if "show_cam_cpt" not in st.session_state:
+    st.session_state.show_cam_cpt = False
+if "show_cam_cateo" not in st.session_state:
+    st.session_state.show_cam_cateo = False
 
 # Configuración del modelo Gemini utilizando st.secrets o variables de entorno
 api_key = None
@@ -301,9 +323,27 @@ with tab1:
         
         # Evidencia fotográfica de la planilla física
         st.write("**Evidencia Requerida:**")
-        evidencia_cpt = st.camera_input("📸 Tomar foto de la Planilla CPT firmada", key="cam_cpt")
-        if evidencia_cpt:
-            st.session_state.foto_cpt = evidencia_cpt
+        if not st.session_state.show_cam_cpt and st.session_state.foto_cpt is None:
+            if st.button("📷 Habilitar Cámara para Evidencia", key="btn_open_cpt"):
+                st.session_state.show_cam_cpt = True
+                st.rerun()
+        
+        if st.session_state.show_cam_cpt:
+            evidencia_cpt = st.camera_input("📸 Tomar foto de la Planilla CPT firmada", key="cam_cpt")
+            if evidencia_cpt:
+                st.session_state.foto_cpt = evidencia_cpt
+                st.session_state.show_cam_cpt = False
+                st.rerun()
+            if st.button("❌ Cerrar Cámara", key="btn_close_cpt"):
+                st.session_state.show_cam_cpt = False
+                st.rerun()
+
+        if st.session_state.foto_cpt is not None:
+            st.image(st.session_state.foto_cpt, width=150, caption="Captura CPT")
+            if st.button("❌ Eliminar / Volver a tomar", key="btn_retake_cpt"):
+                st.session_state.foto_cpt = None
+                st.session_state.show_cam_cpt = True
+                st.rerun()
 
         col_sig1, col_sig2 = st.columns(2)
         with col_sig1:
@@ -402,9 +442,27 @@ with tab2:
                         st.success("🔓 Bypass autorizado.")
                 else:
                     st.write("**Evidencia Requerida:**")
-                    evidencia_cateo = st.camera_input("📸 Tomar foto del cateo manual a 360° en terreno", key="cam_cateo")
-                    if evidencia_cateo:
-                        st.session_state.foto_cateo = evidencia_cateo
+                    if not st.session_state.show_cam_cateo and st.session_state.foto_cateo is None:
+                        if st.button("📷 Habilitar Cámara para Evidencia", key="btn_open_cateo"):
+                            st.session_state.show_cam_cateo = True
+                            st.rerun()
+
+                    if st.session_state.show_cam_cateo:
+                        evidencia_cateo = st.camera_input("📸 Tomar foto del cateo manual a 360° en terreno", key="cam_cateo")
+                        if evidencia_cateo:
+                            st.session_state.foto_cateo = evidencia_cateo
+                            st.session_state.show_cam_cateo = False
+                            st.rerun()
+                        if st.button("❌ Cerrar Cámara", key="btn_close_cateo"):
+                            st.session_state.show_cam_cateo = False
+                            st.rerun()
+
+                    if st.session_state.foto_cateo is not None:
+                        st.image(st.session_state.foto_cateo, width=150, caption="Captura Cateo 360°")
+                        if st.button("❌ Eliminar / Volver a tomar", key="btn_retake_cateo"):
+                            st.session_state.foto_cateo = None
+                            st.session_state.show_cam_cateo = True
+                            st.rerun()
                         
                     if st.session_state.foto_cateo is None:
                         bloqueo_maq = True
@@ -474,8 +532,8 @@ with st.popover(" ", width="stretch"):
                                     chat_context.append({"role": role_name, "parts": [msg["content"]]})
                                 response = model.generate_content(chat_context)
                                 response_text = response.text
-                            except Exception as ex:
-                                response_text = "No pude conectarme con Gemini API. Verifica tu clave."
+                            except Exception as e:
+                                response_text = f"No pude conectarme con Gemini API. Detalle técnico: {str(e)}"
                         else:
                             response_text = "⚠️ **Modo Simulación:** Sin clave de API. Ejemplo: La tapada es T = D_medida - R_cañería."
                         st.markdown(response_text)
