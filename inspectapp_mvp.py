@@ -33,32 +33,21 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* Inmunidad total a Dark Mode: evita que el navegador/SO fuerce paleta oscura */
+    /* El tema claro se fija en .streamlit/config.toml ([theme] base="light"),
+       que es lo que evita que Streamlit genere variables de color oscuras
+       cuando el navegador/SO está en Dark Mode (afecta también a los
+       popovers, menús y demás componentes BaseWeb renderizados en portales).
+       Este bloque de CSS es solo un refuerzo cosmético de alto contraste. */
     html, body {{
         background-color: #F4F6F8 !important;
         color-scheme: light !important;
     }}
 
-    /* Fondo principal claro y limpio, inmunidad a Dark Mode */
     .stApp, [data-testid="stApp"] {{
         background-color: #F4F6F8 !important;
     }}
 
-    /* Forzar que todo el texto sea oscuro para contraste bajo el sol */
     p, span, div, h1, h2, h3, h4, h5, h6, label {{
-        color: #0F172A !important;
-    }}
-
-    /* Componentes BaseWeb (popovers, menús de selectbox, tooltips) se
-       renderizan en un portal fuera de .stApp y no heredaban el fondo claro,
-       dejando texto oscuro sobre fondo oscuro del sistema. Se fuerza acá. */
-    [data-baseweb="popover"], [data-baseweb="layer"], [data-baseweb="menu"],
-    ul[role="listbox"], div[role="tooltip"] {{
-        background-color: #FFFFFF !important;
-        color-scheme: light !important;
-    }}
-    [data-baseweb="popover"] *, [data-baseweb="layer"] *, [data-baseweb="menu"] *,
-    ul[role="listbox"] * {{
         color: #0F172A !important;
     }}
 
