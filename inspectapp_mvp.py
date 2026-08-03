@@ -7,12 +7,21 @@ import base64
 # CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(
     page_title="INSPECTAPP MVP v5.0",
-    page_icon="🤖",
+    page_icon="⛑️",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Convertir avatar local a base64 para CSS
+# PALETA CORPORATIVA (azul marino + gris) ------------------------------
+COLOR_PRIMARY = "#1E3A5F"        # azul marino, color de acento principal
+COLOR_PRIMARY_DARK = "#152A45"   # azul marino oscuro (hover/énfasis)
+COLOR_BG = "#F4F6F8"             # fondo general, gris muy claro
+COLOR_CARD = "#FFFFFF"           # fondo de tarjetas
+COLOR_BORDER = "#D6DBE1"         # bordes neutros
+COLOR_TEXT = "#0F172A"           # texto principal
+COLOR_TEXT_MUTED = "#5B6472"     # texto secundario / subtítulos
+
+# Convertir avatar local a base64 para usarlo como fondo CSS del botón flotante de Ivo
 def get_image_base64(path):
     if os.path.exists(path):
         with open(path, "rb") as f:
@@ -21,6 +30,20 @@ def get_image_base64(path):
 
 ivo_b64 = get_image_base64("./IVO.png")
 ivo_bg_css = f"url('data:image/png;base64,{ivo_b64}')" if ivo_b64 else "none"
+
+# Ícono de marca genérico (casco de obra) para el header, en reemplazo
+# del emoji original — no depende de ningún logo real de Oldelval.
+LOGO_MARK_HTML = f"""
+<div style="display:flex;align-items:center;justify-content:center;
+            width:64px;height:64px;border-radius:16px;margin:0 auto;
+            background-color:{COLOR_PRIMARY};">
+    <svg width="34" height="34" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 15 A8 8 0 0 1 20 15 Z" fill="#FFFFFF"/>
+        <rect x="2" y="14.5" width="20" height="3" rx="1.5" fill="#FFFFFF"/>
+        <rect x="11" y="4" width="2" height="3" rx="1" fill="#FFFFFF"/>
+    </svg>
+</div>
+"""
 
 # ESTILOS CSS PERSONALIZADOS - ALTO CONTRASTE PARA LUZ SOLAR
 st.markdown(f"""
@@ -39,39 +62,43 @@ st.markdown(f"""
        popovers, menús y demás componentes BaseWeb renderizados en portales).
        Este bloque de CSS es solo un refuerzo cosmético de alto contraste. */
     html, body {{
-        background-color: #F4F6F8 !important;
+        background-color: {COLOR_BG} !important;
         color-scheme: light !important;
     }}
 
     .stApp, [data-testid="stApp"] {{
-        background-color: #F4F6F8 !important;
+        background-color: {COLOR_BG} !important;
     }}
 
     p, span, div, h1, h2, h3, h4, h5, h6, label {{
-        color: #0F172A !important;
+        color: {COLOR_TEXT} !important;
     }}
 
-    /* Chat específico: fondo claro para legibilidad absoluta */
+    /* Chat: lista de mensajes tipo transcripción (más parecida a un chat
+       profesional), en vez de tarjetas apiladas con borde pesado */
     [data-testid="stChatMessage"] {{
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border-radius: 8px !important;
-        padding: 10px !important;
-        border: 1px solid #CBD5E1 !important;
-        margin-bottom: 10px !important;
+        background-color: transparent !important;
+        color: {COLOR_TEXT} !important;
+        padding: 10px 4px !important;
+        border-bottom: 1px solid {COLOR_BORDER} !important;
+        margin-bottom: 2px !important;
     }}
     [data-testid="stChatInput"] {{
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border: 1px solid #94A3B8 !important;
+        background-color: {COLOR_CARD} !important;
+        color: {COLOR_TEXT} !important;
+        border: 1px solid {COLOR_BORDER} !important;
+        border-radius: 10px !important;
+    }}
+    [data-testid="stChatInput"]:focus-within {{
+        border-color: {COLOR_PRIMARY} !important;
     }}
     [data-testid="stChatInput"] textarea {{
-        color: #0F172A !important;
+        color: {COLOR_TEXT} !important;
     }}
 
     /* Estilos del header principal */
     .main-title {{
-        color: #0F172A !important;
+        color: {COLOR_TEXT} !important;
         font-family: 'Roboto', sans-serif;
         font-weight: 900;
         font-size: 2.5rem;
@@ -80,7 +107,7 @@ st.markdown(f"""
         letter-spacing: 1px;
     }}
     .main-subtitle {{
-        color: #1E293B !important;
+        color: {COLOR_TEXT_MUTED} !important;
         font-family: 'Roboto', sans-serif;
         font-weight: 500;
         font-size: 1.2rem;
@@ -89,17 +116,17 @@ st.markdown(f"""
 
     /* Modificando los contenedores nativos de Streamlit para que parezcan tarjetas (Cards) */
     div[data-testid="stVerticalBlockBorderWrapper"] {{
-        background-color: #FFFFFF !important;
+        background-color: {COLOR_CARD} !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
-        border: 1px solid #CBD5E1 !important;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06) !important;
+        border: 1px solid {COLOR_BORDER} !important;
         padding: 5px;
     }}
 
     /* Inputs y Selectboxes - Forzar fondo claro y borde visible */
     input, select, textarea, div[data-baseweb="select"], div[data-baseweb="input"] {{
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
+        background-color: {COLOR_CARD} !important;
+        color: {COLOR_TEXT} !important;
         border: 1px solid #94A3B8 !important;
         border-radius: 6px !important;
     }}
@@ -116,13 +143,17 @@ st.markdown(f"""
         font-weight: bold;
         font-size: 1.1rem;
         background-color: #F8FAFC !important;
-        color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
+        color: {COLOR_TEXT} !important;
+        border: 1px solid {COLOR_BORDER} !important;
     }}
-    
+
     div.stButton > button[kind="primary"] {{
-        background-color: #0077C8 !important;
+        background-color: {COLOR_PRIMARY} !important;
         color: #FFFFFF !important;
+        border: 1px solid {COLOR_PRIMARY_DARK} !important;
+    }}
+    div.stButton > button[kind="primary"]:hover {{
+        background-color: {COLOR_PRIMARY_DARK} !important;
     }}
 
     /* Banners de error y warning más impactantes */
@@ -130,7 +161,13 @@ st.markdown(f"""
         border-radius: 8px !important;
         border-left-width: 6px !important;
         font-weight: 600;
-        background-color: #FFFFFF !important;
+        background-color: {COLOR_CARD} !important;
+    }}
+
+    /* Pestañas: subrayado activo en azul marino corporativo */
+    button[data-baseweb="tab"][aria-selected="true"] {{
+        color: {COLOR_PRIMARY} !important;
+        border-bottom-color: {COLOR_PRIMARY} !important;
     }}
 
     /* === ESTILO CABEZA FLOTANTE DE IVO (FAB) === */
@@ -148,9 +185,9 @@ st.markdown(f"""
         height: 80px !important;
         border-radius: 50% !important;
         border: 4px solid #FFFFFF !important;
-        box-shadow: 0 8px 24px rgba(0, 119, 200, 0.6) !important;
+        box-shadow: 0 8px 24px rgba(30, 58, 95, 0.55) !important;
         background-image: {ivo_bg_css} !important;
-        background-color: #0077C8 !important;
+        background-color: {COLOR_PRIMARY} !important;
         background-size: cover !important;
         background-position: center !important;
         background-repeat: no-repeat !important;
@@ -165,7 +202,7 @@ st.markdown(f"""
     }}
     div[data-testid="stPopover"] button:hover {{
         transform: scale(1.1) !important;
-        box-shadow: 0 12px 30px rgba(0, 119, 200, 0.8) !important;
+        box-shadow: 0 12px 30px rgba(30, 58, 95, 0.75) !important;
     }}
     /* Ocultar texto dentro del botón FAB */
     div[data-testid="stPopover"] button p,
@@ -261,8 +298,7 @@ if api_key:
 with st.container(border=True):
     col_logo, col_titles = st.columns([1, 4], vertical_alignment="center")
     with col_logo:
-        # Streamlit renderiza :material:...: solo en texto Markdown normal, no dentro de HTML crudo.
-        st.markdown("<h1 style='text-align: center; color: #0077C8; font-size: 4rem; margin:0;'>👷‍♂️</h1>", unsafe_allow_html=True)
+        st.markdown(LOGO_MARK_HTML, unsafe_allow_html=True)
     with col_titles:
         st.markdown("<div class='main-title'>INSPECTAPP</div>", unsafe_allow_html=True)
         st.markdown("<div class='main-subtitle'>Tu copiloto digital de inspección</div>", unsafe_allow_html=True)
@@ -274,7 +310,7 @@ with st.container(border=True):
     with col_cfg1:
         obra_seleccionada = st.selectbox("Estación / Tramo", ["Medanito", "Allen", "Crucero Catriel", "Puerto Rosales"])
     with col_cfg2:
-        inspector = st.text_input("Inspector Oldelval", "Sofi (Ingeniería)")
+        inspector = st.text_input("Inspector Oldelval", "Sofía Cervantes")
     with col_cfg3:
         solicitante_contratista = st.text_input("Solicitante Contratista", "Ing. Pedro Gómez")
 
@@ -323,7 +359,7 @@ with tab1:
             g_co = st.number_input("CO (ppm)", min_value=0.0, max_value=1000.0, value=0.0, step=1.0)
         with col_g4:
             g_h2s = st.number_input("H2S (ppm)", min_value=0.0, max_value=500.0, value=0.0, step=1.0)
-            
+
         # LÓGICA HARD GATE
         bloqueo_gases = False
         gases_err = []
@@ -339,16 +375,16 @@ with tab1:
         if g_h2s > 10.0:
             bloqueo_gases = True
             gases_err.append(f"H2S tóxico: {g_h2s} ppm (Máx 10 ppm).")
-            
+
         if bloqueo_gases:
             st.error("🛑 BLOQUEO DE SEGURIDAD (HARD GATE)\n\n" + "\n\n".join(gases_err), icon=":material/block:")
         else:
             st.success("Atmósfera segura. Valores dentro del rango tolerado.", icon=":material/check_circle:")
-    
+
     with st.container(border=True):
         st.subheader(":material/draw: 1.3 Firmas CPT")
         cpt_checked = st.checkbox("Certifico bajo declaración jurada haber brindado la charla CPT y verificar firmas en físico.")
-        
+
         # Evidencia fotográfica de la planilla física (cámara nativa o galería)
         st.write("**Evidencia Requerida:**")
         if st.session_state.foto_cpt is None:
@@ -398,7 +434,7 @@ with tab2:
                 eq_estacado = st.checkbox("Estacas cada 50m (recta) / 10m (curva)")
                 cateo_360 = st.checkbox("Cateo manual a 360° (> 1m de ancho)")
                 eq_carteles = st.checkbox("Carteles reflectantes a 200m instalados")
-        
+
         with st.container(border=True):
             st.subheader(":material/calculate: 2.2 Tapada Real")
             st.latex(r"T = D_{medida} - R_{cañeria}")
@@ -408,14 +444,14 @@ with tab2:
             with col_m2:
                 radio_tub = st.number_input("Radio exterior (R_cañería en m)", min_value=0.0, value=0.25, step=0.01)
             st.info(f"📏 **Tapada Real Calculada (T): {d_medida - radio_tub:.2f} metros**", icon=":material/straighten:")
-            
+
         with st.container(border=True):
             st.subheader(":material/warning: 2.3 Zanja Profunda")
             prof_plan = st.number_input("Profundidad de excavación planificada (m)", min_value=0.0, value=1.0, step=0.1)
-            
+
             bloqueo_fosa = False
             fosa_err = []
-            
+
             if prof_plan > 1.20:
                 st.warning("⚠️ PROFUNDIDAD CRÍTICA (> 1.20m). Controles obligatorios:", icon=":material/warning:")
                 col_f1, col_f2 = st.columns(2)
@@ -428,7 +464,7 @@ with tab2:
                 if not (chk_enti and chk_vigia and chk_escape and chk_no_madera):
                     bloqueo_fosa = True
                     fosa_err.append("Faltan controles SRT 503/14 (> 1.20 m).")
-                    
+
                 if prof_plan > 1.50:
                     st.warning("🚧 VALLADO OBLIGATORIO (> 1.50m).", icon=":material/fence:")
                     chk_vallas = st.checkbox("Vallas a mínimo 1.00m del borde")
@@ -444,15 +480,15 @@ with tab2:
                         fosa_err.append("Falta arnés obligatorio.")
             else:
                 st.success("Profundidad estándar (< 1.20 m).", icon=":material/check:")
-                
+
             if bloqueo_fosa:
                 st.error("🛑 BLOQUEO DE FOSA\n\n" + "\n\n".join(fosa_err), icon=":material/block:")
-                
+
         with st.container(border=True):
             st.subheader(":material/agriculture: 2.4 Posicionamiento de Maquinaria")
             maquinaria_paralela = st.checkbox("Retroexcavadora paralela al ducto")
             excavacion_proxima = st.radio("¿Excavación a menos de 1.00 metro?", ["No (Stop Mecánico)", "Sí (Bypass Crítico)"])
-            
+
             bloqueo_maq = False
             if excavacion_proxima == "Sí (Bypass Crítico)":
                 st.error("🚨 DESVÍO CRÍTICO: Vulneración de Stop Mecánico.", icon=":material/warning:")
@@ -485,9 +521,9 @@ with tab2:
                         st.warning("📸 Faltan evidencias. Es obligatorio adjuntar la foto del cateo.")
                     else:
                         st.success("✅ Evidencia cargada.")
-                        
+
         m2_listo = eq_georradar and eq_rd7000 and eq_estacado and cateo_360 and eq_acopio and eq_clima and eq_carteles and maquinaria_paralela and not bloqueo_fosa and not bloqueo_maq
-        
+
         with st.container(border=True):
             if m2_listo:
                 st.balloons()
@@ -503,17 +539,18 @@ with st.popover(" ", width="stretch"):
     col_av1, col_av2 = st.columns([1, 3], vertical_alignment="center")
     with col_av1:
         if os.path.exists("./IVO.png"):
-            st.image("./IVO.png", width=65)
+            st.image("./IVO.png", width=48)
         else:
             st.markdown("🤖")
     with col_av2:
-        st.markdown("**Ivo ─ Copiloto**")
-        st.caption("Asistente técnico Oldelval")
-        if not model_initialized:
+        st.markdown("**Ivo · Copiloto**")
+        if model_initialized:
+            st.caption("🟢 En línea — Asistente técnico Oldelval")
+        else:
             st.caption("⚠️ Sin GEMINI_API_KEY configurada — modo simulación")
 
     if st.session_state.messages:
-        if st.button("🗑️ Limpiar", key="clear_chat_btn"):
+        if st.button("🗑️ Limpiar conversación", key="clear_chat_btn"):
             st.session_state.messages = []
             st.rerun()
 
@@ -528,7 +565,7 @@ with st.popover(" ", width="stretch"):
             st.session_state.messages.append({"role": "user", "content": SUGGESTIONS[selected]})
             st.rerun()
 
-    chat_box = st.container(height=400, border=True)
+    chat_box = st.container(height=400)
     with chat_box:
         if not st.session_state.messages:
             st.markdown("👋 **¡Hola! Soy Ivo.** Tu copiloto digital de bolsillo.\n\nPreguntame sobre normativas, LERs o procedimientos.")
