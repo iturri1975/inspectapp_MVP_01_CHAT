@@ -171,6 +171,11 @@ st.markdown(f"""
     }}
 
     /* === ESTILO CABEZA FLOTANTE DE IVO (FAB) === */
+    /* El panel del chat mantiene su fondo claro de siempre, independiente
+       del color de fondo general de la página */
+    [data-testid="stPopoverBody"] {{
+        background-color: {COLOR_CARD} !important;
+    }}
     /* Posicionamiento fijo del contenedor del popover al inferior derecho */
     div[data-testid="stPopover"] {{
         position: fixed !important;
